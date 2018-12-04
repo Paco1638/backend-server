@@ -1,40 +1,39 @@
 var express = require('express');
-var bcrypt = require('bcryptjs');
-var jwt = require('jsonwebtoken');
 
 var mdAutenticacion = require('../middlewares/autenticacion');
 
 var app = express();
 
-var Usuario = require('../models/usuario');
+var Mantenimiento = require('../models/mantenimiento');
 
 // ========================================
-// Obtener todos los usuarios
+// Obtener todos los mantenimientos
 // ========================================
 app.get('/', (req, res, next) => {
 
     var desde = req.query.desde || 0;
     desde = Number(desde);
 
-    Usuario.find({}, 'nombre email img role')
+    Mantenimiento.find({})
         .skip(desde)
         .limit(5)
+        .populate('usuario', 'nombre email')
         .exec(
-            (err, usuarios) => {
+            (err, mantenimientos) => {
 
                 if (err) {
                     return res.status(500).json({
                         ok: false,
-                        mensaje: 'Error cargando usuario',
+                        mensaje: 'Error cargando mantenimiento',
                         errors: err
                     });
                 }
 
-                Usuario.count({}, (err, conteo) => {
+                Mantenimiento.count({}, (err, conteo) => {
 
                     res.status(200).json({
                         ok: true,
-                        usuarios: usuarios,
+                        mantenimientos: mantenimientos,
                         total: conteo
                     });
                 })
@@ -42,116 +41,117 @@ app.get('/', (req, res, next) => {
 });
 
 // ========================================
-// Actualizar usuario
+// Actualizar mantenimiento
 // ========================================
 app.put('/:id', mdAutenticacion.verificaToken, (req, res) => {
 
     var id = req.params.id;
     var body = req.body;
 
-    Usuario.findById(id, (err, usuario) => {
+    Mantenimiento.findById(id, (err, mantenimiento) => {
 
         if (err) {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Error al buscar usuario',
+                mensaje: 'Error al buscar mantenimiento',
                 errors: err
             });
         }
 
-        if (!usuario) {
+        if (!mantenimiento) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'El usuario con el id ' + id + ' no existe',
-                errors: { message: 'No existe un usuario con ese ID' }
+                mensaje: 'El mantenimiento con el id ' + id + ' no existe',
+                errors: { message: 'No existe un mantenimiento con ese ID' }
             });
         }
 
-        usuario.nombre = body.nombre;
-        usuario.email = body.email;
-        usuario.role = body.role;
+        mantenimiento.usuario = req.usuario._id;
+        mantenimiento.maquina = body.maquina;
+        mantenimiento.pieza_danada = body.pieza_danada;
+        mantenimiento.pieza_reemplazada = body.pieza_reemplazada;
+        mantenimiento.descripcion = body.descripcion;
 
-        usuario.save((err, usuarioGuardado) => {
+        mantenimiento.save((err, mantenimientoGuardado) => {
 
             if (err) {
                 return res.status(400).json({
                     ok: false,
-                    mensaje: 'Error al actualizar usuario',
+                    mensaje: 'Error al actualizar mantenimiento',
                     errors: err
                 });
             }
 
-            usuarioGuardado.password = ':)';
-
             res.status(200).json({
                 ok: true,
-                usuario: usuarioGuardado
+                mantenimiento: mantenimientoGuardado
             });
         });
     });
 });
 
 // ========================================
-// Crear un nuevo usuario
+// Crear un nuevo mantenimiento
 // ========================================
 app.post('/', mdAutenticacion.verificaToken, (req, res) => {
 
     var body = req.body;
 
-    var usuario = new Usuario({
-        nombre: body.nombre,
-        email: body.email,
-        password: bcrypt.hashSync(body.password, 10),
-        img: body.img,
-        role: body.role
+    var mantenimiento = new Mantenimiento({
+
+        maquina: body.maquina,
+        pieza_danada: body.pieza_danada,
+        pieza_reemplazada: body.pieza_reemplazada,
+        descripcion: body.descripcion,
+        usuario: req.usuario._id
+
     });
 
-    usuario.save((err, usuarioGuardado) => {
+    mantenimiento.save((err, mantenimientoGuardado) => {
 
         if (err) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'Error al crear usuario',
+                mensaje: 'Error al crear mantenimiento',
                 errors: err
             });
         }
 
         res.status(201).json({
             ok: true,
-            usuario: usuarioGuardado,
-            usuariotoken: req.usuario
+            mantenimiento: mantenimientoGuardado
         });
     });
 });
 
 // ========================================
-// Borrar un usuario por el id
+// Borrar un mantenimiento por el id
 // ========================================
 app.delete('/:id', mdAutenticacion.verificaToken, (req, res) => {
 
     var id = req.params.id;
 
-    Usuario.findByIdAndRemove(id, (err, usuarioBorrado) => {
+    Mantenimiento.findByIdAndRemove(id, (err, mantenimientoBorrado) => {
 
         if (err) {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Error al borrar el usuario',
+                mensaje: 'Error al borrar el mantenimiento',
                 errors: err
             });
         }
 
-        if (!usuarioBorrado) {
+        if (!mantenimientoBorrado) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'No existe un usuario con ese id',
-                errors: { message: 'No existe un usuario con ese id' }
+                mensaje: 'No existe un mantenimiento con ese id',
+                errors: { message: 'No existe un mantenimiento con ese id' }
             });
         }
 
         res.status(200).json({
             ok: true,
-            usuario: usuarioBorrado
+            mantenimiento: mantenimientoBorrado
         });
     });
 });

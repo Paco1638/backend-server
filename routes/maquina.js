@@ -1,40 +1,39 @@
 var express = require('express');
-var bcrypt = require('bcryptjs');
-var jwt = require('jsonwebtoken');
 
 var mdAutenticacion = require('../middlewares/autenticacion');
 
 var app = express();
 
-var Usuario = require('../models/usuario');
+var Maquina = require('../models/maquina');
 
 // ========================================
-// Obtener todos los usuarios
+// Obtener todas las maquinas
 // ========================================
 app.get('/', (req, res, next) => {
 
     var desde = req.query.desde || 0;
     desde = Number(desde);
 
-    Usuario.find({}, 'nombre email img role')
+    Maquina.find({})
         .skip(desde)
         .limit(5)
+        .populate('usuario', 'nombre email')
         .exec(
-            (err, usuarios) => {
+            (err, maquinas) => {
 
                 if (err) {
                     return res.status(500).json({
                         ok: false,
-                        mensaje: 'Error cargando usuario',
+                        mensaje: 'Error cargando maquina',
                         errors: err
                     });
                 }
 
-                Usuario.count({}, (err, conteo) => {
+                Maquina.count({}, (err, conteo) => {
 
                     res.status(200).json({
                         ok: true,
-                        usuarios: usuarios,
+                        maquinas: maquinas,
                         total: conteo
                     });
                 })
@@ -49,77 +48,78 @@ app.put('/:id', mdAutenticacion.verificaToken, (req, res) => {
     var id = req.params.id;
     var body = req.body;
 
-    Usuario.findById(id, (err, usuario) => {
+    Maquina.findById(id, (err, maquina) => {
 
         if (err) {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Error al buscar usuario',
+                mensaje: 'Error al buscar maquina',
                 errors: err
             });
         }
 
-        if (!usuario) {
+        if (!maquina) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'El usuario con el id ' + id + ' no existe',
-                errors: { message: 'No existe un usuario con ese ID' }
+                mensaje: 'La maquina con el id ' + id + ' no existe',
+                errors: { message: 'No existe una maquina con ese ID' }
             });
         }
 
-        usuario.nombre = body.nombre;
-        usuario.email = body.email;
-        usuario.role = body.role;
+        maquina.usuario = req.usuario._id;
+        maquina.nombre = body.nombre;
+        maquina.placa_sena = body.placa_sena;
+        maquina.marca = body.marca;
+        maquina.ambiente = body.ambiente;
+        maquina.aula = body.aula;
 
-        usuario.save((err, usuarioGuardado) => {
+        maquina.save((err, maquinaGuardada) => {
 
             if (err) {
                 return res.status(400).json({
                     ok: false,
-                    mensaje: 'Error al actualizar usuario',
+                    mensaje: 'Error al actualizar maquina',
                     errors: err
                 });
             }
 
-            usuarioGuardado.password = ':)';
-
             res.status(200).json({
                 ok: true,
-                usuario: usuarioGuardado
+                maquina: maquinaGuardada
             });
         });
     });
 });
 
 // ========================================
-// Crear un nuevo usuario
+// Crear una nueva maquina
 // ========================================
 app.post('/', mdAutenticacion.verificaToken, (req, res) => {
 
     var body = req.body;
 
-    var usuario = new Usuario({
+    var maquina = new Maquina({
         nombre: body.nombre,
-        email: body.email,
-        password: bcrypt.hashSync(body.password, 10),
-        img: body.img,
-        role: body.role
+        placa_sena: body.placa_sena,
+        marca: body.marca,
+        ambiente: body.ambiente,
+        aula: body.aula,
+        usuario: req.usuario._id
     });
 
-    usuario.save((err, usuarioGuardado) => {
+    maquina.save((err, maquinaGuardada) => {
 
         if (err) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'Error al crear usuario',
+                mensaje: 'Error al crear maquina',
                 errors: err
             });
         }
 
         res.status(201).json({
             ok: true,
-            usuario: usuarioGuardado,
-            usuariotoken: req.usuario
+            maquina: maquinaGuardada
         });
     });
 });
@@ -131,27 +131,27 @@ app.delete('/:id', mdAutenticacion.verificaToken, (req, res) => {
 
     var id = req.params.id;
 
-    Usuario.findByIdAndRemove(id, (err, usuarioBorrado) => {
+    Maquina.findByIdAndRemove(id, (err, maquinaGuardada) => {
 
         if (err) {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Error al borrar el usuario',
+                mensaje: 'Error al borrar la maquina',
                 errors: err
             });
         }
 
-        if (!usuarioBorrado) {
+        if (!maquinaGuardada) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'No existe un usuario con ese id',
-                errors: { message: 'No existe un usuario con ese id' }
+                mensaje: 'No existe una maquina con ese id',
+                errors: { message: 'No existe una maquina con ese id' }
             });
         }
 
         res.status(200).json({
             ok: true,
-            usuario: usuarioBorrado
+            maquina: maquinaGuardada
         });
     });
 });

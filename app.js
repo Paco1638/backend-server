@@ -14,6 +14,11 @@ app.use(bodyParser.json())
 // Importar rutas
 var appRoutes = require('./routes/app');
 var usuarioRoutes = require('./routes/usuario');
+var mantenimientoRoutes = require('./routes/mantenimiento');
+var maquinaRoutes = require('./routes/maquina');
+var busquedaRoutes = require('./routes/busqueda');
+var uploadRoutes = require('./routes/upload');
+var imagenesRoutes = require('./routes/imagenes');
 var loginRoutes = require('./routes/login');
 
 // Conexión a la base de datos
@@ -25,8 +30,18 @@ mongoose.connection.openUri('mongodb://localhost:27017/CMMI', (err, res) => {
 
 });
 
+// Server index config
+var serveIndex = require('serve-index');
+app.use(express.static(__dirname + '/'));
+app.use('/uploads', serveIndex(__dirname + '/uploads'));
+
 // Rutas
 app.use('/usuario', usuarioRoutes);
+app.use('/mantenimiento', mantenimientoRoutes);
+app.use('/maquina', maquinaRoutes);
+app.use('/busqueda', busquedaRoutes);
+app.use('/upload', uploadRoutes);
+app.use('/img', imagenesRoutes);
 app.use('/login', loginRoutes);
 app.use('/', appRoutes);
 
