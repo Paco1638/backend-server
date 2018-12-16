@@ -15,9 +15,9 @@ app.get('/', (req, res, next) => {
     desde = Number(desde);
 
     Maquina.find({})
+        .populate('usuario', 'nombre email')
         .skip(desde)
         .limit(5)
-        .populate('usuario', 'nombre email')
         .exec(
             (err, maquinas) => {
 
@@ -39,6 +39,37 @@ app.get('/', (req, res, next) => {
                 })
             });
 });
+
+// ========================================
+// Obtener maquina por ID
+// ========================================
+
+app.get('/:id', (req, res) => {
+    var id = req.params.id;
+    Maquina.findById(id)
+        .populate('usuario', 'nombre img email')
+        .exec((err, maquina) => {
+            if (err) {
+                return res.status(500).json({
+                    ok: false,
+                    mensaje: 'Error al buscar maquina',
+                    errors: err
+                });
+            }
+            if (!maquina) {
+                return res.status(400).json({
+                    ok: false,
+                    mensaje: 'El maquina con el id ' + id + 'no existe',
+                    errors: { message: 'No existe un maquina con ese ID' }
+                });
+            }
+            res.status(200).json({
+                ok: true,
+                maquina: maquina
+            });
+        })
+})
+
 
 // ========================================
 // Actualizar usuario
@@ -68,7 +99,7 @@ app.put('/:id', mdAutenticacion.verificaToken, (req, res) => {
 
         maquina.usuario = req.usuario._id;
         maquina.nombre = body.nombre;
-        maquina.placa_sena = body.placa_sena;
+        maquina.placasena = body.placasena;
         maquina.marca = body.marca;
         maquina.ambiente = body.ambiente;
         maquina.aula = body.aula;
@@ -100,7 +131,7 @@ app.post('/', mdAutenticacion.verificaToken, (req, res) => {
 
     var maquina = new Maquina({
         nombre: body.nombre,
-        placa_sena: body.placa_sena,
+        placasena: body.placasena,
         marca: body.marca,
         ambiente: body.ambiente,
         aula: body.aula,

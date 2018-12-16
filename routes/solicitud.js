@@ -4,186 +4,186 @@ var mdAutenticacion = require('../middlewares/autenticacion');
 
 var app = express();
 
-var Mantenimiento = require('../models/mantenimiento');
+var Solicitud = require('../models/solicitud');
 
 // ========================================
-// Obtener todos los mantenimientos
+// Obtener todas las solicitud
 // ========================================
 app.get('/', (req, res, next) => {
 
     var desde = req.query.desde || 0;
     desde = Number(desde);
 
-    Mantenimiento.find({})
+    Solicitud.find({})
         .skip(desde)
         .limit(5)
         .populate('usuario', 'nombre email')
         .exec(
-            (err, mantenimientos) => {
+            (err, solicitudes) => {
 
                 if (err) {
                     return res.status(500).json({
                         ok: false,
-                        mensaje: 'Error cargando mantenimiento',
+                        mensaje: 'Error cargando solicitud',
                         errors: err
                     });
                 }
 
-                Mantenimiento.count({}, (err, conteo) => {
+                Solicitud.count({}, (err, conteo) => {
 
                     res.status(200).json({
                         ok: true,
-                        mantenimientos: mantenimientos,
+                        solicitudes: solicitudes,
                         total: conteo
                     });
                 })
             });
 });
 
-// // ==========================================
-// // Obtener mantenimiento por ID
-// // ==========================================
+// ========================================
+// Obtener solicitud por ID
+// ========================================
 
 app.get('/:id', (req, res) => {
     var id = req.params.id;
-    Mantenimiento.findById(id)
+    Solicitud.findById(id)
         .populate('usuario', 'nombre img email')
-        .exec((err, mantenimiento) => {
+        .exec((err, solicitud) => {
             if (err) {
                 return res.status(500).json({
                     ok: false,
-                    mensaje: 'Error al buscar mantenimiento',
+                    mensaje: 'Error al buscar solicitud',
                     errors: err
                 });
             }
-            if (!mantenimiento) {
+            if (!solicitud) {
                 return res.status(400).json({
                     ok: false,
-                    mensaje: 'El mantenimiento con el id ' + id + 'no existe',
-                    errors: { message: 'No existe un mantenimiento con ese ID' }
+                    mensaje: 'La solicitud con el id ' + id + 'no existe',
+                    errors: { message: 'No existe una solicitud con ese ID' }
                 });
             }
             res.status(200).json({
                 ok: true,
-                mantenimiento: mantenimiento
+                solicitud: solicitud
             });
         })
 })
 
+
 // ========================================
-// Actualizar mantenimiento
+// Actualizar solicitud
 // ========================================
 app.put('/:id', mdAutenticacion.verificaToken, (req, res) => {
 
     var id = req.params.id;
     var body = req.body;
 
-    Mantenimiento.findById(id, (err, mantenimiento) => {
+    Solicitud.findById(id, (err, solicitud) => {
 
         if (err) {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Error al buscar mantenimiento',
+                mensaje: 'Error al buscar solicitud',
                 errors: err
             });
         }
 
-        if (!mantenimiento) {
+        if (!solicitud) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'El mantenimiento con el id ' + id + ' no existe',
-                errors: { message: 'No existe un mantenimiento con ese ID' }
+                mensaje: 'La solicitud con el id ' + id + ' no existe',
+                errors: { message: 'No existe una solicitud con ese ID' }
             });
         }
 
-        mantenimiento.usuario = req.usuario._id;
-        mantenimiento.maquina = body.maquina;
-        mantenimiento.pieza_danada = body.pieza_danada;
-        mantenimiento.pieza_reemplazada = body.pieza_reemplazada;
-        mantenimiento.proxi_mantenimiento = body.proxi_mantenimiento;
-        mantenimiento.descripcion = body.descripcion;
+        solicitud.usuario = req.usuario._id;
+        solicitud.nombre_maquina = body.nombre_maquina;
+        solicitud.tipo_solicitud = body.tipo_solicitud;
+        solicitud.ambiente_solicitud = body.ambiente_solicitud;
+        solicitud.fecha_solicitud = body.fecha_solicitud;
 
-        mantenimiento.save((err, mantenimientoGuardado) => {
+        solicitud.save((err, solicitudGuardada) => {
 
             if (err) {
                 return res.status(400).json({
                     ok: false,
-                    mensaje: 'Error al actualizar mantenimiento',
+                    mensaje: 'Error al actualizar solicitud',
                     errors: err
                 });
             }
 
             res.status(200).json({
                 ok: true,
-                mantenimiento: mantenimientoGuardado
+                solicitud: solicitudGuardada
             });
         });
     });
 });
 
 // ========================================
-// Crear un nuevo mantenimiento
+// Crear una nueva solicitud
 // ========================================
 app.post('/', mdAutenticacion.verificaToken, (req, res) => {
 
     var body = req.body;
 
-    var mantenimiento = new Mantenimiento({
+    var solicitud = new Solicitud({
 
-        maquina: body.maquina,
-        pieza_danada: body.pieza_danada,
-        pieza_reemplazada: body.pieza_reemplazada,
-        proxi_mantenimiento: body.proxi_mantenimiento,
-        descripcion: body.descripcion,
+        nombre_maquina: body.nombre_maquina,
+        tipo_solicitud: body.tipo_solicitud,
+        ambiente_solicitud: body.ambiente_solicitud,
+        fecha_solicitud: body.fecha_solicitud,
         usuario: req.usuario._id
-
     });
 
-    mantenimiento.save((err, mantenimientoGuardado) => {
+    solicitud.save((err, solicitudGuardada) => {
 
         if (err) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'Error al crear mantenimiento',
+                mensaje: 'Error al crear solicitud',
                 errors: err
             });
         }
 
         res.status(201).json({
             ok: true,
-            mantenimiento: mantenimientoGuardado
+            solicitud: solicitudGuardada
         });
     });
 });
 
 // ========================================
-// Borrar un mantenimiento por el id
+// Borrar un solicitud por el id
 // ========================================
 app.delete('/:id', mdAutenticacion.verificaToken, (req, res) => {
 
     var id = req.params.id;
 
-    Mantenimiento.findByIdAndRemove(id, (err, mantenimientoBorrado) => {
+    Solicitud.findByIdAndRemove(id, (err, solicitudBorrada) => {
 
         if (err) {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Error al borrar el mantenimiento',
+                mensaje: 'Error al borrar la solicitud',
                 errors: err
             });
         }
 
-        if (!mantenimientoBorrado) {
+        if (!solicitudBorrada) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'No existe un mantenimiento con ese id',
-                errors: { message: 'No existe un mantenimiento con ese id' }
+                mensaje: 'No existe una solicitud con ese id',
+                errors: { message: 'No existe una solicitud con ese id' }
             });
         }
+
         res.status(200).json({
             ok: true,
-            mantenimiento: mantenimientoBorrado
+            solicitud: solicitudBorrada
         });
     });
 });
+
 module.exports = app;
